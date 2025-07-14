@@ -6,7 +6,6 @@ import (
 	"embed"
 	"html/template"
 	"io"
-	"io/fs"
 	"net"
 	"net/http"
 	"s-ui/api"
@@ -107,6 +106,9 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 
 	group_api := engine.Group(base_url + "api")
 	api.NewAPIHandler(group_api, apiv2)
+
+	// Handler جدید برای PersiaNet
+	group_api.POST("/inbound", s.handleInbound)
 
 	// Serve index.html as the entry point
 	// Handle all other routes by serving index.html
@@ -218,4 +220,23 @@ func (s *Server) Stop() error {
 
 func (s *Server) GetCtx() context.Context {
 	return s.ctx
+}
+
+func (s *Server) handleInbound(c *gin.Context) {
+	if c.Request.Method != http.MethodPost {
+		c.String(http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+	var inboundConfig map[string]interface{}
+	if err := c.ShouldBindJSON(&inboundConfig); err != nil {
+		c.String(http.StatusBadRequest, err.Error())
+		return
+	}
+	configService := service.NewConfigService(nil)
+	_, err := configService.Save("inbounds", "new", json.RawMessage(inboundConfig), "", "", "")
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+	c.String(http.StatusOK, "Inbound saved")
 }

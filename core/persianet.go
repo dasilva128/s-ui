@@ -61,7 +61,7 @@ func (p *PersiaNetInbound) startQUIC(ctx context.Context, router adapter.Router)
 		MaxIdleTimeout: 30 * time.Second,
 	}
 	tlsConfig := &tls.Config{
-		NextProtos:   p.TLS.ALPN,
+		NextProtos: p.TLS.ALPN,
 		// باید گواهینامه TLS رو اینجا لود کنید
 		// Certificates: []tls.Certificate{loadYourTLSCert()},
 	}

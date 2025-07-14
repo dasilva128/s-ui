@@ -15,9 +15,9 @@ const defaultJson = `
     {
       "type": "tun",
       "address": [
-				"172.19.0.1/30",
-				"fdfe:dcba:9876::1/126"
-			],
+        "172.19.0.1/30",
+        "fdfe:dcba:9876::1/126"
+      ],
       "mtu": 9000,
       "auto_route": true,
       "strict_route": false,
@@ -36,6 +36,31 @@ const defaultJson = `
       "listen": "127.0.0.1",
       "listen_port": 2080,
       "users": []
+    },
+    {
+      "type": "persianet",
+      "tag": "persianet-in",
+      "listen": "::",
+      "port": 443,
+      "protocol": "quic",
+      "settings": {
+        "encryption": "chacha20-poly1305",
+        "obfuscation": "https",
+        "fragmentation": {
+          "enabled": true,
+          "size": "100-200"
+        },
+        "fallback": {
+          "type": "http",
+          "transport": "h2",
+          "port": 443
+        }
+      },
+      "tls": {
+        "enabled": true,
+        "server_name": "example.com",
+        "alpn": ["h2", "http/1.1"]
+      }
     }
   ]
 }
@@ -130,6 +155,29 @@ func (j *JsonService) getOutbounds(clientConfig json.RawMessage, inbounds []*mod
 				continue
 			}
 			outbound[key] = value
+		}
+
+		// پشتیبانی از PersiaNet
+		if protocol == "persianet" {
+			outbound["protocol"] = inData.Protocol // "quic" or "http2"
+			outbound["settings"] = map[string]interface{}{
+				"encryption": "chacha20-poly1305",
+				"obfuscation": "https",
+				"fragmentation": map[string]interface{}{
+					"enabled": true,
+					"size":    "100-200",
+				},
+			}
+			if inData.Protocol == "http2" {
+				outbound["transport"] = "h2"
+			}
+			if fallback, ok := outbound["fallback"]; ok {
+				outbound["fallback"] = map[string]interface{}{
+					"type":      "http",
+					"transport": "h2",
+					"port":      fallback.(map[string]interface{})["port"],
+				}
+			}
 		}
 
 		var addrs []map[string]interface{}

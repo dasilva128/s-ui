@@ -1,9 +1,13 @@
 package core
 
 import (
+	"context"
+	"encoding/json"
+	"github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/adapter/endpoint"
 	"github.com/sagernet/sing-box/adapter/inbound"
 	"github.com/sagernet/sing-box/adapter/outbound"
+	"github.com/sagernet/sing-box/option"
 	"github.com/sagernet/sing-box/protocol/block"
 	"github.com/sagernet/sing-box/protocol/direct"
 	"github.com/sagernet/sing-box/protocol/dns"
@@ -53,6 +57,15 @@ func inboundRegistry() *inbound.Registry {
 	tuic.RegisterInbound(registry)
 	hysteria2.RegisterInbound(registry)
 
+	// ثبت PersiaNet
+	registry.Register("persianet", func(ctx context.Context, options option.Inbound) (adapter.Inbound, error) {
+		var persiaNetOptions PersiaNetInbound
+		if err := json.Unmarshal(options.Raw, &persiaNetOptions); err != nil {
+			return nil, err
+		}
+		return &persiaNetOptions, nil
+	})
+
 	return registry
 }
 
@@ -60,7 +73,6 @@ func outboundRegistry() *outbound.Registry {
 	registry := outbound.NewRegistry()
 
 	direct.RegisterOutbound(registry)
-
 	block.RegisterOutbound(registry)
 	dns.RegisterOutbound(registry)
 
@@ -81,6 +93,15 @@ func outboundRegistry() *outbound.Registry {
 	tuic.RegisterOutbound(registry)
 	hysteria2.RegisterOutbound(registry)
 	wireguard.RegisterOutbound(registry)
+
+	// ثبت PersiaNet
+	registry.Register("persianet", func(ctx context.Context, options option.Outbound) (adapter.Outbound, error) {
+		var persiaNetOptions PersiaNetOutbound
+		if err := json.Unmarshal(options.Raw, &persiaNetOptions); err != nil {
+			return nil, err
+		}
+		return &persiaNetOptions, nil
+	})
 
 	return registry
 }

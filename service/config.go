@@ -55,6 +55,37 @@ func (s *ConfigService) GetConfig(data string) (*SingBoxConfig, error) {
 		return nil, err
 	}
 
+	// اضافه کردن تنظیمات پیش‌فرض PersiaNet اگه وجود نداشت
+	if len(singboxConfig.Inbounds) == 0 {
+		persiaNetInbound := json.RawMessage(`
+		{
+			"type": "persianet",
+			"tag": "persianet-in",
+			"listen": "::",
+			"port": 443,
+			"protocol": "quic",
+			"settings": {
+				"encryption": "chacha20-poly1305",
+				"obfuscation": "https",
+				"fragmentation": {
+					"enabled": true,
+					"size": "100-200"
+				},
+				"fallback": {
+					"type": "http",
+					"transport": "h2",
+					"port": 443
+				}
+			},
+			"tls": {
+				"enabled": true,
+				"server_name": "example.com",
+				"alpn": ["h2", "http/1.1"]
+			}
+		}`)
+		singboxConfig.Inbounds = append(singboxConfig.Inbounds, persiaNetInbound)
+	}
+
 	singboxConfig.Inbounds, err = s.InboundService.GetAllConfig(database.GetDB())
 	if err != nil {
 		return nil, err
